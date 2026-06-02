@@ -8,7 +8,7 @@ import {
   Settings as SettingsIcon,
   Wallet
 } from 'lucide-react'
-import type { Analysis, Holding, NewsState, Settings } from '../../shared/types'
+import type { Analysis, Holding, NewsState, Settings, StockPricesState } from '../../shared/types'
 import { DEFAULT_SETTINGS } from '../../shared/types'
 import PortfolioForm from './components/PortfolioForm'
 import Holdings from './components/Holdings'
@@ -17,7 +17,7 @@ import Suggestions from './components/Suggestions'
 import Rebalance from './components/Rebalance'
 import NewsFeed from './components/NewsFeed'
 import SettingsModal from './components/SettingsModal'
-import { inr, timeAgo } from './util'
+import { inr, timeAgo, toISTString } from './util'
 
 const emptyAnalysis: Analysis = {
   totalInvestedInr: 0,
@@ -33,17 +33,25 @@ export default function App(): JSX.Element {
   const [analysis, setAnalysis] = useState<Analysis>(emptyAnalysis)
   const [news, setNews] = useState<NewsState | null>(null)
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
+  const [prices, setPrices] = useState<StockPricesState>({
+    prices: {},
+    lastUpdated: null,
+    isFetching: false,
+    error: null
+  })
   const [showSettings, setShowSettings] = useState(false)
 
   const reload = useCallback(async () => {
-    const [h, a, n] = await Promise.all([
+    const [h, a, n, p] = await Promise.all([
       window.api.getHoldings(),
       window.api.getAnalysis(),
-      window.api.getNews()
+      window.api.getNews(),
+      window.api.getPrices()
     ])
     setHoldings(h)
     setAnalysis(a)
     setNews(n)
+    setPrices(p)
   }, [])
 
   useEffect(() => {
@@ -54,7 +62,8 @@ export default function App(): JSX.Element {
   }, [reload])
 
   const refreshNow = async (): Promise<void> => {
-    await window.api.refreshNews()
+    const [, p] = await Promise.all([window.api.refreshNews(), window.api.refreshPrices()])
+    setPrices(p)
     void reload()
   }
 
@@ -127,9 +136,15 @@ export default function App(): JSX.Element {
 
             <PortfolioForm onAdded={() => void reload()} />
             <div style={{ marginTop: 18 }}>
+              {prices.lastUpdated && (
+                <div className="prices-ts">
+                  Prices as of {toISTString(prices.lastUpdated)}
+                </div>
+              )}
               <Holdings
                 holdings={holdings}
                 byStock={analysis.byStock}
+                prices={prices.prices}
                 onChange={() => void reload()}
               />
             </div>

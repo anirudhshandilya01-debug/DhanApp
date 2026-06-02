@@ -1,6 +1,6 @@
 :root {
   /* Deep, warm charcoal base with a gold editorial accent. */
-  --bg: #14110f;
+  --bg: #ad8e7a5b;
   --bg-raised: #1c1815;
   --bg-card: #211c18;
   --bg-card-hover: #271f1a;
@@ -327,6 +327,9 @@ a:hover {
   border-color: var(--gold-deep);
 }
 .field input.mono { font-family: var(--font-mono); }
+.field input[type='date'] {
+  color-scheme: dark;
+}
 
 .primary-btn {
   align-self: flex-end;
@@ -390,7 +393,7 @@ a:hover {
 }
 .hrow {
   display: grid;
-  grid-template-columns: 1.6fr 0.9fr 1fr 0.7fr auto;
+  grid-template-columns: 1.6fr 0.9fr 1fr 1fr 0.7fr auto;
   align-items: center;
   gap: 10px;
   padding: 12px 6px;
@@ -429,6 +432,63 @@ a:hover {
 }
 .hrow .amt input:hover { border-color: var(--line); }
 .hrow .amt input:focus { border-color: var(--gold-deep); background: var(--bg); outline: none; }
+.inv-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.date-of-inv {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  opacity: 0.75;
+}
+.hrow .cur-val {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  text-align: right;
+}
+.cv-amount {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text);
+}
+.cv-na {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-faint);
+}
+.gain-chip {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 99px;
+}
+.gain-chip.pos {
+  color: var(--pos);
+  background: rgba(111, 194, 139, 0.12);
+  border: 1px solid rgba(111, 194, 139, 0.25);
+}
+.gain-chip.neg {
+  color: var(--neg);
+  background: rgba(224, 122, 106, 0.12);
+  border: 1px solid rgba(224, 122, 106, 0.25);
+}
+.prices-ts {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: right;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
 .hrow .pct { font-family: var(--font-mono); font-size: 13px; color: var(--text-dim); text-align: right; }
 .icon-btn {
   color: var(--text-faint);

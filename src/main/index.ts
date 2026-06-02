@@ -13,6 +13,7 @@ import {
 import { newsEngine } from './services/newsFetcher'
 import { analyze } from './services/analyzer'
 import { lookupOrFetchSymbol, searchUniverse } from './services/stockUniverse'
+import { fetchCurrentPrices, fetchHistoricalClose, getPricesState } from './services/stockPrices'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -64,8 +65,14 @@ function registerIpc(): void {
   ipcMain.handle('holdings:get', () => getHoldings())
 
   ipcMain.handle('holding:add', async (_e, input: HoldingInput) => {
-    const res = await addHolding(input)
-    return res
+    // Auto-fetch the historical closing price at dateOfInvestment so the
+    // renderer can show current value without any extra user input.
+    let enriched = { ...input }
+    if (input.dateOfInvestment && !input.avgBuyPrice) {
+      const hist = await fetchHistoricalClose(input.symbol, input.dateOfInvestment)
+      if (hist) enriched = { ...enriched, avgBuyPrice: hist }
+    }
+    return addHolding(enriched)
   })
 
   ipcMain.handle('holding:update', (_e, id: string, patch) =>
@@ -90,6 +97,23 @@ function registerIpc(): void {
     const settings = await saveSettings(patch)
     newsEngine.reconfigure(settings.refreshMinutes, settings.freshnessHours)
     return settings
+  })
+
+  ipcMain.handle('prices:get', async () => {
+    const state = getPricesState()
+    // Auto-fetch on first load or if data is older than 5 minutes.
+    const stale =
+      !state.lastUpdated || Date.now() - Date.parse(state.lastUpdated) > 5 * 60 * 1000
+    if (stale && !state.isFetching) {
+      const holdings = await getHoldings()
+      return fetchCurrentPrices(holdings.map((h) => h.symbol))
+    }
+    return state
+  })
+
+  ipcMain.handle('prices:refresh', async () => {
+    const holdings = await getHoldings()
+    return fetchCurrentPrices(holdings.map((h) => h.symbol))
   })
 }
 

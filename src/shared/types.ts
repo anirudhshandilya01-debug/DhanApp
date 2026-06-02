@@ -15,6 +15,11 @@ export type Sector =
   | 'Realty'
   | 'Power'
   | 'Cement'
+  | 'Electronics'
+  | 'Aviation'
+  | 'Media'
+  | 'Defence'
+  | 'Textiles'
   | 'Other'
 
 export interface UniverseStock {
@@ -31,6 +36,15 @@ export interface Holding {
   name: string
   sector: Sector
   investedInr: number // amount invested, in INR
+  dateOfInvestment?: string // ISO date string, e.g. "2024-01-15"
+  avgBuyPrice?: number // average buy price per share in INR (auto-fetched via Yahoo Finance)
+}
+
+export interface StockPricesState {
+  prices: Record<string, number> // symbol -> latest market price in INR
+  lastUpdated: string | null // ISO UTC string of when prices were last fetched
+  isFetching: boolean
+  error: string | null
 }
 
 export interface SourceInfo {

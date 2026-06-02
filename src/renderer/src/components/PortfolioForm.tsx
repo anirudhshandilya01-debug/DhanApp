@@ -9,6 +9,7 @@ interface Props {
 export default function PortfolioForm({ onAdded }: Props): JSX.Element {
   const [symbol, setSymbol] = useState('')
   const [amount, setAmount] = useState('')
+  const [date, setDate] = useState('')
   const [matches, setMatches] = useState<UniverseStock[]>([])
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -60,9 +61,14 @@ export default function PortfolioForm({ onAdded }: Props): JSX.Element {
       }
     }
 
-    await window.api.addHolding({ symbol: sym, investedInr: amt })
+    await window.api.addHolding({
+      symbol: sym,
+      investedInr: amt,
+      dateOfInvestment: date || undefined
+    })
     setSymbol('')
     setAmount('')
+    setDate('')
     setLookupErr(null)
     setBusy(false)
     onAdded()
@@ -107,6 +113,16 @@ export default function PortfolioForm({ onAdded }: Props): JSX.Element {
           onKeyDown={(e) => {
             if (e.key === 'Enter') void submit()
           }}
+        />
+      </div>
+      <div className="field">
+        <label>Date of investment</label>
+        <input
+          type="date"
+          value={date}
+          max={new Date().toISOString().slice(0, 10)}
+          onChange={(e) => setDate(e.target.value)}
+          title="Used to auto-fetch your buy price and calculate current value"
         />
       </div>
       <button className="primary-btn" onClick={() => void submit()} disabled={busy}>

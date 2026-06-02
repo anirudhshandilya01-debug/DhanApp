@@ -4,6 +4,7 @@ import type {
   Holding,
   NewsState,
   Settings,
+  StockPricesState,
   UniverseStock
 } from '../shared/types'
 import type { HoldingInput } from '../main/services/store'
@@ -14,7 +15,7 @@ const api = {
     ipcRenderer.invoke('holding:add', input),
   updateHolding: (
     id: string,
-    patch: Partial<Pick<Holding, 'investedInr' | 'name' | 'sector'>>
+    patch: Partial<Pick<Holding, 'investedInr' | 'name' | 'sector' | 'dateOfInvestment' | 'avgBuyPrice'>>
   ): Promise<Holding[]> => ipcRenderer.invoke('holding:update', id, patch),
   removeHolding: (id: string): Promise<Holding[]> =>
     ipcRenderer.invoke('holding:remove', id),
@@ -28,6 +29,8 @@ const api = {
   getSettings: (): Promise<Settings> => ipcRenderer.invoke('settings:get'),
   saveSettings: (patch: Partial<Settings>): Promise<Settings> =>
     ipcRenderer.invoke('settings:save', patch),
+  getPrices: (): Promise<StockPricesState> => ipcRenderer.invoke('prices:get'),
+  refreshPrices: (): Promise<StockPricesState> => ipcRenderer.invoke('prices:refresh'),
   /** Fires when the background engine has new verified data. */
   onDataUpdated: (cb: () => void): (() => void) => {
     const handler = (): void => cb()

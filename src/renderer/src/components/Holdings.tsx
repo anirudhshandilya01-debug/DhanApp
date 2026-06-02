@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import type { AllocationSlice, Holding } from '../../../shared/types'
-import { inrExact } from '../util'
+import { inr, inrExact, formatDate } from '../util'
 
 interface Props {
   holdings: Holding[]
   byStock: AllocationSlice[]
+  prices: Record<string, number>
   onChange: () => void
 }
 
-export default function Holdings({ holdings, byStock, onChange }: Props): JSX.Element {
+export default function Holdings({ holdings, byStock, prices, onChange }: Props): JSX.Element {
   const pctFor = (symbol: string): number =>
     byStock.find((s) => s.key === symbol)?.pct ?? 0
 
@@ -29,11 +30,12 @@ export default function Holdings({ holdings, byStock, onChange }: Props): JSX.El
         <span>Holding</span>
         <span>Sector</span>
         <span style={{ textAlign: 'right' }}>Invested</span>
+        <span style={{ textAlign: 'right' }}>Current Value</span>
         <span style={{ textAlign: 'right' }}>Weight</span>
         <span />
       </div>
       {holdings.map((h) => (
-        <Row key={h.id} h={h} pct={pctFor(h.symbol)} onChange={onChange} />
+        <Row key={h.id} h={h} pct={pctFor(h.symbol)} currentPrice={prices[h.symbol]} onChange={onChange} />
       ))}
     </div>
   )
@@ -42,10 +44,12 @@ export default function Holdings({ holdings, byStock, onChange }: Props): JSX.El
 function Row({
   h,
   pct,
+  currentPrice,
   onChange
 }: {
   h: Holding
   pct: number
+  currentPrice?: number
   onChange: () => void
 }): JSX.Element {
   const [val, setVal] = useState(String(h.investedInr))
@@ -57,6 +61,11 @@ function Row({
       onChange()
     }
   }
+
+  const qty = h.avgBuyPrice && h.avgBuyPrice > 0 ? h.investedInr / h.avgBuyPrice : null
+  const currentValue = qty && currentPrice ? qty * currentPrice : null
+  const gainPct =
+    currentValue != null ? ((currentValue - h.investedInr) / h.investedInr) * 100 : null
 
   return (
     <div className="hrow">
@@ -75,9 +84,27 @@ function Row({
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
           }}
         />
-        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+        <span className="inv-meta">
           {inrExact(h.investedInr)}
+          {h.dateOfInvestment && (
+            <span className="date-of-inv">since {formatDate(h.dateOfInvestment)}</span>
+          )}
         </span>
+      </div>
+      <div className="cur-val">
+        {currentValue != null ? (
+          <>
+            <span className="cv-amount">{inr(currentValue)}</span>
+            {gainPct != null && (
+              <span className={`gain-chip ${gainPct >= 0 ? 'pos' : 'neg'}`}>
+                {gainPct >= 0 ? '+' : ''}
+                {gainPct.toFixed(1)}%
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="cv-na">—</span>
+        )}
       </div>
       <span className="pct">{pct.toFixed(1)}%</span>
       <button

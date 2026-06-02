@@ -56,6 +56,8 @@ export interface HoldingInput {
   investedInr: number
   /** Optional override for off-universe tickers. */
   name?: string
+  dateOfInvestment?: string // ISO date string, e.g. "2024-01-15"
+  avgBuyPrice?: number // auto-fetched by IPC layer; stored as-is
 }
 
 export async function addHolding(input: HoldingInput): Promise<Holding[]> {
@@ -66,13 +68,19 @@ export async function addHolding(input: HoldingInput): Promise<Holding[]> {
   if (existing) {
     // Adding the same symbol again tops up the existing position.
     existing.investedInr += Math.max(0, input.investedInr)
+    if (!existing.dateOfInvestment && input.dateOfInvestment) {
+      existing.dateOfInvestment = input.dateOfInvestment
+      if (input.avgBuyPrice) existing.avgBuyPrice = input.avgBuyPrice
+    }
   } else {
     data.holdings.push({
       id: randomUUID(),
       symbol,
       name: known?.name ?? input.name ?? symbol,
       sector: known?.sector ?? 'Other',
-      investedInr: Math.max(0, input.investedInr)
+      investedInr: Math.max(0, input.investedInr),
+      dateOfInvestment: input.dateOfInvestment,
+      avgBuyPrice: input.avgBuyPrice
     })
   }
   await persist()
@@ -81,7 +89,7 @@ export async function addHolding(input: HoldingInput): Promise<Holding[]> {
 
 export async function updateHolding(
   id: string,
-  patch: Partial<Pick<Holding, 'investedInr' | 'name' | 'sector'>>
+  patch: Partial<Pick<Holding, 'investedInr' | 'name' | 'sector' | 'dateOfInvestment' | 'avgBuyPrice'>>
 ): Promise<Holding[]> {
   const data = await load()
   const h = data.holdings.find((x) => x.id === id)
@@ -89,6 +97,8 @@ export async function updateHolding(
     if (typeof patch.investedInr === 'number') h.investedInr = Math.max(0, patch.investedInr)
     if (patch.name) h.name = patch.name
     if (patch.sector) h.sector = patch.sector
+    if (patch.dateOfInvestment !== undefined) h.dateOfInvestment = patch.dateOfInvestment
+    if (typeof patch.avgBuyPrice === 'number') h.avgBuyPrice = patch.avgBuyPrice
     await persist()
   }
   return data.holdings
