@@ -20,6 +20,8 @@ const api = {
     ipcRenderer.invoke('holding:remove', id),
   searchUniverse: (q: string): Promise<UniverseStock[]> =>
     ipcRenderer.invoke('universe:search', q),
+  lookupSymbol: (symbol: string): Promise<UniverseStock | undefined> =>
+    ipcRenderer.invoke('universe:lookup', symbol),
   getAnalysis: (): Promise<Analysis> => ipcRenderer.invoke('analysis:get'),
   getNews: (): Promise<NewsState> => ipcRenderer.invoke('news:get'),
   refreshNews: (): Promise<NewsState> => ipcRenderer.invoke('news:refresh'),

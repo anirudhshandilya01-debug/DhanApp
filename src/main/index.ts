@@ -12,7 +12,7 @@ import {
 } from './services/store'
 import { newsEngine } from './services/newsFetcher'
 import { analyze } from './services/analyzer'
-import { searchUniverse } from './services/stockUniverse'
+import { lookupOrFetchSymbol, searchUniverse } from './services/stockUniverse'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -75,6 +75,8 @@ function registerIpc(): void {
   ipcMain.handle('holding:remove', (_e, id: string) => removeHolding(id))
 
   ipcMain.handle('universe:search', (_e, q: string) => searchUniverse(q))
+
+  ipcMain.handle('universe:lookup', (_e, symbol: string) => lookupOrFetchSymbol(symbol))
 
   ipcMain.handle('analysis:get', () => buildAnalysis())
 

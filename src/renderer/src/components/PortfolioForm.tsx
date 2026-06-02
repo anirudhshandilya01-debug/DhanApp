@@ -12,6 +12,7 @@ export default function PortfolioForm({ onAdded }: Props): JSX.Element {
   const [matches, setMatches] = useState<UniverseStock[]>([])
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [lookupErr, setLookupErr] = useState<string | null>(null)
   const boxRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -42,12 +43,27 @@ export default function PortfolioForm({ onAdded }: Props): JSX.Element {
   }
 
   const submit = async (): Promise<void> => {
+    const sym = symbol.trim().toUpperCase()
     const amt = Number(amount)
-    if (!symbol.trim() || !Number.isFinite(amt) || amt <= 0) return
+    if (!sym || !Number.isFinite(amt) || amt <= 0) return
     setBusy(true)
-    await window.api.addHolding({ symbol: symbol.trim().toUpperCase(), investedInr: amt })
+    setLookupErr(null)
+
+    // If the symbol is not in the local universe, validate it online before adding.
+    const inLocal = matches.some((m) => m.symbol === sym)
+    if (!inLocal) {
+      const found = await window.api.lookupSymbol(sym)
+      if (!found) {
+        setLookupErr(`"${sym}" was not found on NSE. Please verify the symbol.`)
+        setBusy(false)
+        return
+      }
+    }
+
+    await window.api.addHolding({ symbol: sym, investedInr: amt })
     setSymbol('')
     setAmount('')
+    setLookupErr(null)
     setBusy(false)
     onAdded()
   }
@@ -94,8 +110,9 @@ export default function PortfolioForm({ onAdded }: Props): JSX.Element {
         />
       </div>
       <button className="primary-btn" onClick={() => void submit()} disabled={busy}>
-        <Plus size={16} /> Add holding
+        <Plus size={16} /> {busy ? 'Validating…' : 'Add holding'}
       </button>
+      {lookupErr && <p className="lookup-err">{lookupErr}</p>}
     </div>
   )
 }

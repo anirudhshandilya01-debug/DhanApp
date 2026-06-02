@@ -1,4 +1,4 @@
-import type { UniverseStock } from '../../shared/types'
+import type { Sector, UniverseStock } from '../../shared/types'
 
 // A curated, sector-tagged universe of widely-followed NSE-listed companies.
 // This powers three things with zero network dependency:
@@ -120,4 +120,77 @@ export function searchUniverse(query: string, limit = 8): UniverseStock[] {
       s.name.toLowerCase().includes(q) ||
       s.aliases.some((a) => a.includes(q))
   ).slice(0, limit)
+}
+
+// ---------------------------------------------------------------------------
+// Online fallback — Yahoo Finance (NSE suffix)
+// ---------------------------------------------------------------------------
+
+const YAHOO_SECTOR_MAP: Partial<Record<string, Sector>> = {
+  'Financial Services': 'Financials',
+  Technology: 'IT',
+  Energy: 'Energy',
+  'Consumer Defensive': 'FMCG',
+  'Consumer Cyclical': 'Consumer',
+  Healthcare: 'Pharma',
+  'Basic Materials': 'Metals',
+  Industrials: 'Infrastructure',
+  'Communication Services': 'Telecom',
+  Utilities: 'Power',
+  'Real Estate': 'Realty'
+}
+
+const YF_HEADERS = { 'User-Agent': 'DhanAdvisor/1.0 (personal portfolio research tool)' }
+
+type YfChart = { chart?: { result?: Array<{ meta?: { longName?: string; shortName?: string } }> } }
+type YfSummary = { quoteSummary?: { result?: Array<{ assetProfile?: { sector?: string } }> } }
+
+async function fetchFromYahoo(symbol: string): Promise<UniverseStock | undefined> {
+  const ticker = `${symbol}.NS`
+  try {
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`,
+      { headers: YF_HEADERS }
+    )
+    if (!res.ok) return undefined
+    const data = (await res.json()) as YfChart
+    const meta = data.chart?.result?.[0]?.meta
+    const name = meta?.longName ?? meta?.shortName
+    if (!name) return undefined
+
+    let sector: Sector = 'Other'
+    try {
+      const sRes = await fetch(
+        `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=assetProfile`,
+        { headers: YF_HEADERS }
+      )
+      if (sRes.ok) {
+        const sData = (await sRes.json()) as YfSummary
+        const ySector = sData.quoteSummary?.result?.[0]?.assetProfile?.sector
+        if (ySector) sector = YAHOO_SECTOR_MAP[ySector] ?? 'Other'
+      }
+    } catch { /* keep 'Other' */ }
+
+    return { symbol, name, sector, aliases: [name.toLowerCase()] }
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Checks the in-memory cache first (O(1)); on a miss, validates the symbol
+ * against Yahoo Finance (NSE) and caches any successful result so all
+ * subsequent synchronous lookups — including lookupSymbol and searchUniverse —
+ * will find it immediately.
+ */
+export async function lookupOrFetchSymbol(symbol: string): Promise<UniverseStock | undefined> {
+  const key = symbol.trim().toUpperCase()
+  const hit = BY_SYMBOL.get(key)
+  if (hit) return hit
+  const fetched = await fetchFromYahoo(key)
+  if (fetched) {
+    UNIVERSE.push(fetched)
+    BY_SYMBOL.set(key, fetched)
+  }
+  return fetched
 }
