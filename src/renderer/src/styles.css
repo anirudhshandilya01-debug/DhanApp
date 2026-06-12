@@ -183,9 +183,9 @@ a:hover {
 .body {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.95fr);
-  gap: 22px;
-  padding: 22px 26px 0;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(260px, 0.7fr);
+  gap: 18px;
+  padding: 22px 22px 0;
   overflow: hidden;
 }
 .col {

@@ -14,6 +14,8 @@ import { newsEngine } from './services/newsFetcher'
 import { analyze } from './services/analyzer'
 import { lookupOrFetchSymbol, searchUniverse } from './services/stockUniverse'
 import { fetchCurrentPrices, fetchHistoricalClose, getPricesState } from './services/stockPrices'
+import { fetchEmailAnalysis, getEmailState } from './services/emailService'
+import { searchStock } from './services/stockSearch'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -114,6 +116,22 @@ function registerIpc(): void {
   ipcMain.handle('prices:refresh', async () => {
     const holdings = await getHoldings()
     return fetchCurrentPrices(holdings.map((h) => h.symbol))
+  })
+
+  ipcMain.handle('email:get', () => getEmailState())
+
+  ipcMain.handle('email:refresh', async () => {
+    const holdings = await getHoldings()
+    return fetchEmailAnalysis(holdings)
+  })
+
+  ipcMain.handle('stock:search', async (_e, query: string) => {
+    const settings = await getSettings()
+    try {
+      return { answer: await searchStock(query, settings.geminiApiKey) }
+    } catch (err) {
+      return { error: (err as Error).message }
+    }
   })
 }
 

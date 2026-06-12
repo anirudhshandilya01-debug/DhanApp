@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
   Analysis,
+  EmailAnalysisState,
   Holding,
   NewsState,
   Settings,
@@ -31,6 +32,10 @@ const api = {
     ipcRenderer.invoke('settings:save', patch),
   getPrices: (): Promise<StockPricesState> => ipcRenderer.invoke('prices:get'),
   refreshPrices: (): Promise<StockPricesState> => ipcRenderer.invoke('prices:refresh'),
+  getEmailAnalysis: (): Promise<EmailAnalysisState> => ipcRenderer.invoke('email:get'),
+  refreshEmailAnalysis: (): Promise<EmailAnalysisState> => ipcRenderer.invoke('email:refresh'),
+  searchStock: (query: string): Promise<{ answer?: string; error?: string }> =>
+    ipcRenderer.invoke('stock:search', query),
   /** Fires when the background engine has new verified data. */
   onDataUpdated: (cb: () => void): (() => void) => {
     const handler = (): void => cb()

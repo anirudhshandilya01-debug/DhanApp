@@ -2,13 +2,15 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   Gauge,
   Lightbulb,
+  Mail,
   Newspaper,
   RefreshCw,
   Scale,
+  Search,
   Settings as SettingsIcon,
   Wallet
 } from 'lucide-react'
-import type { Analysis, Holding, NewsState, Settings, StockPricesState } from '../../shared/types'
+import type { Analysis, EmailAnalysisState, Holding, NewsState, Settings, StockPricesState } from '../../shared/types'
 import { DEFAULT_SETTINGS } from '../../shared/types'
 import PortfolioForm from './components/PortfolioForm'
 import Holdings from './components/Holdings'
@@ -16,6 +18,8 @@ import AllocationChart from './components/AllocationChart'
 import Suggestions from './components/Suggestions'
 import Rebalance from './components/Rebalance'
 import NewsFeed from './components/NewsFeed'
+import EmailAnalysis from './components/EmailAnalysis'
+import StockSearch from './components/StockSearch'
 import SettingsModal from './components/SettingsModal'
 import { inr, timeAgo, toISTString } from './util'
 
@@ -39,6 +43,12 @@ export default function App(): JSX.Element {
     isFetching: false,
     error: null
   })
+  const [emailState, setEmailState] = useState<EmailAnalysisState>({
+    data: [],
+    lastUpdated: null,
+    isFetching: false,
+    error: null
+  })
   const [showSettings, setShowSettings] = useState(false)
 
   const reload = useCallback(async () => {
@@ -57,6 +67,7 @@ export default function App(): JSX.Element {
   useEffect(() => {
     void reload()
     window.api.getSettings().then(setSettings)
+    window.api.getEmailAnalysis().then(setEmailState)
     const off = window.api.onDataUpdated(() => void reload())
     return off
   }, [reload])
@@ -65,6 +76,12 @@ export default function App(): JSX.Element {
     const [, p] = await Promise.all([window.api.refreshNews(), window.api.refreshPrices()])
     setPrices(p)
     void reload()
+  }
+
+  const refreshEmails = async (): Promise<void> => {
+    setEmailState((prev) => ({ ...prev, isFetching: true, error: null }))
+    const next = await window.api.refreshEmailAnalysis()
+    setEmailState(next)
   }
 
   const saveSettings = async (patch: Partial<Settings>): Promise<void> => {
@@ -211,6 +228,35 @@ export default function App(): JSX.Element {
               )}
             </div>
             {news && <NewsFeed news={news} />}
+          </section>
+
+          <section className="card delay-4">
+            <div className="card-head">
+              <span className="icon">
+                <Mail size={18} />
+              </span>
+              <h2>Your Inbox — Stock Mentions</h2>
+              {emailState.data.length > 0 && (
+                <span className="count">
+                  {emailState.data.length} holding{emailState.data.length !== 1 ? 's' : ''} with mail
+                </span>
+              )}
+            </div>
+            <EmailAnalysis emailState={emailState} onRefresh={() => void refreshEmails()} />
+          </section>
+        </div>
+
+        {/* Third column — AI stock search */}
+        <div className="col">
+          <section className="card delay-2">
+            <div className="card-head">
+              <span className="icon">
+                <Search size={18} />
+              </span>
+              <h2>Ask About Stocks</h2>
+              <span className="count">Gemini + Yahoo Finance</span>
+            </div>
+            <StockSearch />
           </section>
         </div>
       </div>

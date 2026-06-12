@@ -124,6 +124,8 @@ export interface Settings {
   stockConcentrationPct: number
   /** Flag a single sector above this % of the portfolio. */
   sectorConcentrationPct: number
+  /** Google AI Studio API key for the stock search feature. */
+  geminiApiKey: string
 }
 
 export interface NewsState {
@@ -137,6 +139,26 @@ export interface NewsState {
   lastError: string | null
 }
 
+export interface StockEmail {
+  subject: string
+  sender: string
+  date: string
+  snippet: string
+}
+
+export interface StockEmailSummary {
+  symbol: string
+  name: string
+  emails: StockEmail[]
+}
+
+export interface EmailAnalysisState {
+  data: StockEmailSummary[]
+  lastUpdated: string | null
+  isFetching: boolean
+  error: string | null
+}
+
 export interface AppData {
   holdings: Holding[]
   settings: Settings
@@ -147,5 +169,6 @@ export const DEFAULT_SETTINGS: Settings = {
   freshnessHours: 72,
   maxSuggestions: 8,
   stockConcentrationPct: 25,
-  sectorConcentrationPct: 40
+  sectorConcentrationPct: 40,
+  geminiApiKey: ''
 }

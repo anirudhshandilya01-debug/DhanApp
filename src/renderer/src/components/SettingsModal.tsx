@@ -13,6 +13,9 @@ export default function SettingsModal({ settings, onClose, onSave }: Props): JSX
   const num = (key: keyof Settings) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setS((prev) => ({ ...prev, [key]: Number(e.target.value) }))
 
+  const str = (key: keyof Settings) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setS((prev) => ({ ...prev, [key]: e.target.value }))
+
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -67,6 +70,33 @@ export default function SettingsModal({ settings, onClose, onSave }: Props): JSX
             max={100}
             value={s.sectorConcentrationPct}
             onChange={num('sectorConcentrationPct')}
+          />
+        </div>
+
+        <div className="setting-row" style={{ alignItems: 'flex-start' }}>
+          <div className="info">
+            <div className="t">Gemini API key</div>
+            <div className="d">
+              Free key from{' '}
+              <a
+                href="https://aistudio.google.com/apikey"
+                onClick={(e) => {
+                  e.preventDefault()
+                  window.open('https://aistudio.google.com/apikey')
+                }}
+                style={{ color: 'var(--gold-soft)' }}
+              >
+                aistudio.google.com
+              </a>{' '}
+              — powers the stock search column
+            </div>
+          </div>
+          <input
+            type="password"
+            value={s.geminiApiKey}
+            onChange={str('geminiApiKey')}
+            placeholder="AIza…"
+            style={{ width: 200, textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: 12 }}
           />
         </div>
 

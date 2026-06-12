@@ -2,18 +2,19 @@ import type { StockPricesState } from '../../shared/types'
 
 const YF_HEADERS = { 'User-Agent': 'DhanAdvisor/1.0 (personal portfolio research tool)' }
 
-interface YfQuoteResponse {
-  quoteResponse?: {
-    result?: Array<{
-      symbol: string
-      regularMarketPrice?: number
-    }>
-  }
-}
-
 interface YfChartResponse {
   chart?: {
     result?: Array<{
+      meta?: {
+        regularMarketPrice?: number
+        previousClose?: number
+        regularMarketDayHigh?: number
+        regularMarketDayLow?: number
+        fiftyTwoWeekHigh?: number
+        fiftyTwoWeekLow?: number
+        marketCap?: number
+        symbol?: string
+      }
       timestamp?: number[]
       indicators?: {
         quote?: Array<{ close?: (number | null)[] }>
@@ -42,20 +43,23 @@ export async function fetchCurrentPrices(symbols: string[]): Promise<StockPrices
   _state = { ..._state, isFetching: true, error: null }
 
   try {
-    const tickers = symbols.map((s) => `${s.toUpperCase()}.NS`).join(',')
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(tickers)}&fields=regularMarketPrice`
-
-    const res = await fetch(url, { headers: YF_HEADERS })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-
-    const data = (await res.json()) as YfQuoteResponse
-    const results = data?.quoteResponse?.result ?? []
+    // v8 chart endpoint works without a crumb; fetch all symbols in parallel.
+    const settled = await Promise.allSettled(
+      symbols.map(async (sym) => {
+        const ticker = `${sym.toUpperCase()}.NS`
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`
+        const res = await fetch(url, { headers: YF_HEADERS })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = (await res.json()) as YfChartResponse
+        const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice
+        return { sym, price }
+      })
+    )
 
     const prices: Record<string, number> = {}
-    for (const r of results) {
-      if (r.regularMarketPrice != null) {
-        const sym = r.symbol.replace(/\.NS$/i, '')
-        prices[sym] = r.regularMarketPrice
+    for (const r of settled) {
+      if (r.status === 'fulfilled' && r.value.price != null) {
+        prices[r.value.sym] = r.value.price
       }
     }
 
